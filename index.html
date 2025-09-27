@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Wix Mapbox Embed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.17.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { width: 100%; height: 500px; }
+    #map-legend { font-family: Arial, sans-serif; margin-top: 10px; }
+    #map-legend div { margin: 2px 0; }
+    #map-legend span { display:inline-block; width:12px; height:12px; margin-right:5px; }
+    @media (max-width: 768px) { #map { height: 300px; } }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="map-legend">
+    <strong>Legend:</strong>
+    <div><span style="background:#1E90FF"></span> Yard Sale</div>
+    <div><span style="background:#FF4500"></span> Garage Sale</div>
+    <div><span style="background:#228B22"></span> Estate Sale</div>
+    <div><span style="background:#FFD700"></span> Moving Sale</div>
+    <div><span style="background:#A9A9A9"></span> Other Sale</div>
+  </div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.17.0/mapbox-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <script>
+    mapboxgl.accessToken = "pk.eyJ1IjoidmlzaXRyaWRnZTUxMyIsImEiOiJjbWcxZzhkcGgwbzlxMmxteHlxNHVhcnFpIn0.54laJEMoFDulKbpQkYRkKg";
+
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: "mapbox://styles/mapbox/streets-v11",
+      center: [-117.6709, 35.6225], // Ridgecrest
+      zoom: 12
+    });
+
+    map.addControl(new mapboxgl.NavigationControl());
+
+    const sheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJWm5DmhezcvSsFC0jRoKaUWRjsQmDvRY8WVxTA31TfzGwTQrxv0H-BrZgQel3P9GaDGbXfDo4ogZ3/pub?output=csv";
+
+    Papa.parse(sheetCSV, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        results.data.forEach(row => {
+          if (row.Latitude && row.Longitude) {
+            new mapboxgl.Marker({ color: getColorForType(row.Sale_Type) })
+              .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
+              .setPopup(new mapboxgl.Popup({ offset: 25 })
+                .setHTML(`
+                  <strong>${row.Sale_Type} Sale</strong><br>
+                  ${row.Street_Address || ""}, ${row.City || ""}, ${row.State || ""}<br>
+                  ${row.Date || ""} ${row.Start_Time || ""} - ${row.End_Time || ""}<br>
+                  ${row.Description || ""}
+                `))
+              .addTo(map);
+          }
+        });
+      }
+    });
+
+    function getColorForType(type) {
+      switch (type) {
+        case "Yard": return "#1E90FF";
+        case "Garage": return "#FF4500";
+        case "Estate": return "#228B22";
+        case "Moving": return "#FFD700";
+        default: return "#A9A9A9";
+      }
+    }
+  </script>
+</body>
+</html>
